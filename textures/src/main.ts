@@ -54,7 +54,7 @@ loadingManager.onError = (url) => {
 
 const textureLoader = new THREE.TextureLoader(loadingManager);
 
-const baseColor = textureLoader.load("/assets/door/basecolor.jpg");
+const baseColor = textureLoader.load("/assets/textures/diamond-ore.png");
 const height = textureLoader.load("/assets/door/height.png");
 const metallic = textureLoader.load("/assets/door/metallic.jpg");
 const ambientOcclusion = textureLoader.load(
@@ -63,6 +63,22 @@ const ambientOcclusion = textureLoader.load(
 const normal = textureLoader.load("/assets/door/normal.jpg");
 const opacity = textureLoader.load("/assets/door/opacity.jpg");
 const roughness = textureLoader.load("/assets/door/roughness.jpg");
+
+// baseColor.repeat.setX(2);
+// baseColor.repeat.setY(2);
+
+// baseColor.wrapS = THREE.MirroredRepeatWrapping;
+// baseColor.wrapT = THREE.MirroredRepeatWrapping;
+
+// baseColor.offset.setX(0.5);
+
+// baseColor.rotation = Math.PI * 0.25;
+
+// baseColor.center.set(0.5, 0.5);
+
+baseColor.generateMipmaps = false;
+baseColor.minFilter = THREE.NearestFilter;
+baseColor.magFilter = THREE.NearestFilter;
 
 // Cursor
 const cursor = {

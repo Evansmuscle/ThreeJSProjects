@@ -22,19 +22,44 @@ window.addEventListener("mousemove", (e) => {
 // Scene
 const scene = new THREE.Scene();
 
-// Meshes
-const geometry = new THREE.BoxGeometry(1, 1, 1);
-
-const materialOptions: THREE.MeshBasicMaterialParameters = {
-  color: 0xffffff,
+/**
+ * Galaxy
+ */
+const parameters = {
+  count: 3000,
+  size: 0.02,
 };
-const material = new THREE.MeshBasicMaterial(materialOptions);
 
-const mesh = new THREE.Mesh(geometry, material);
+const generateGalaxy = () => {
+  const geometry = new THREE.BufferGeometry();
 
-scene.add(mesh);
+  const vertices = new Float32Array(parameters.count * 3);
 
-mesh.position.set(0, 0, 0);
+  for (let i = 0; i < parameters.count; i++) {
+    const i3 = i * 3;
+
+    vertices[i3 + 0] = (Math.random() - 0.5) * 3;
+    vertices[i3 + 1] = (Math.random() - 0.5) * 3;
+    vertices[i3 + 2] = (Math.random() - 0.5) * 3;
+  }
+
+  const positionAttr = new THREE.BufferAttribute(vertices, 3);
+
+  geometry.setAttribute("position", positionAttr);
+
+  const material = new THREE.PointsMaterial({
+    size: parameters.size,
+    sizeAttenuation: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+
+  const galaxy = new THREE.Points(geometry, material);
+
+  scene.add(galaxy);
+};
+
+generateGalaxy();
 
 // Camera
 
