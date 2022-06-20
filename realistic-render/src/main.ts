@@ -7,6 +7,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { ACESFilmicToneMapping } from "three";
 
 /**
  * Parameters
@@ -17,6 +18,7 @@ const parameters = {
     height: window.innerHeight,
     aspectRatio: window.innerWidth / window.innerHeight,
   },
+  envMapIntensity: 1.5,
 };
 
 const gui = new dat.GUI({
@@ -45,7 +47,7 @@ const camera = new THREE.PerspectiveCamera(
   2000
 );
 
-camera.position.set(-20, 25, 40);
+camera.position.set(-25, 20, 35);
 scene.add(camera);
 
 /**
@@ -89,6 +91,15 @@ gui
   .max(30)
   .step(0.001)
   .name("Light Position Z");
+gui
+  .add(parameters, "envMapIntensity")
+  .min(0)
+  .max(10)
+  .step(0.001)
+  .name("Environment Map Intensity")
+  .onChange((_) => {
+    updateAllMaterials();
+  });
 
 scene.add(ambientLight, directionalLight);
 
@@ -96,17 +107,62 @@ scene.add(ambientLight, directionalLight);
  * Textures
  */
 const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath("draco/");
+dracoLoader.setDecoderPath("/draco/");
 
 const gltfLoader = new GLTFLoader();
 gltfLoader.setDRACOLoader(dracoLoader);
 
-gltfLoader.load("models/FlightHelmet/FlightHelmet.gltf", (gltf) => {
-  gltf.scene.position.y = 1;
-  gltf.scene.position.x = -2.5;
-  gltf.scene.position.z = 2.5;
+/**
+ * Environment Maps
+ */
+const cubeTextureLoader = new THREE.CubeTextureLoader();
+
+const environmentMap = cubeTextureLoader.load(
+  [
+    "/textures/environmentMaps/0/px.jpg",
+    "/textures/environmentMaps/0/nx.jpg",
+    "/textures/environmentMaps/0/py.jpg",
+    "/textures/environmentMaps/0/ny.jpg",
+    "/textures/environmentMaps/0/pz.jpg",
+    "/textures/environmentMaps/0/nz.jpg",
+  ],
+  (envMap) => {
+    scene.background = envMap;
+    envMap.encoding = THREE.sRGBEncoding;
+    // scene.environment = envMap;
+  },
+  (progress) => {
+    console.log(progress);
+  },
+  (error) => {
+    console.log(error);
+  }
+);
+
+/**
+ * Update All Materials
+ */
+const updateAllMaterials = () => {
+  scene.traverse((child) => {
+    if (
+      child instanceof THREE.Mesh &&
+      child.material instanceof THREE.MeshStandardMaterial
+    ) {
+      child.material.envMap = environmentMap;
+      child.material.envMapIntensity = parameters.envMapIntensity;
+    }
+  });
+};
+
+// Flight Helmet
+gltfLoader.load("/models/FlightHelmet/FlightHelmet.gltf", (gltf) => {
+  gltf.scene.position.y = -7;
+  gltf.scene.position.x = 0;
+  gltf.scene.position.z = 0;
   gltf.scene.scale.set(20, 20, 20);
   gltf.scene.castShadow = true;
+
+  camera.lookAt(gltf.scene.position);
 
   gui
     .add(gltf.scene.rotation, "x")
@@ -127,33 +183,17 @@ gltfLoader.load("models/FlightHelmet/FlightHelmet.gltf", (gltf) => {
     .step(0.001)
     .name("Flight Helmet Rotation Z");
 
-  camera.lookAt(gltf.scene.position);
-
   scene.add(gltf.scene);
+
+  updateAllMaterials();
 });
-
-/**
- * Meshes
- */
-const planeGeometry = new THREE.PlaneBufferGeometry(100, 100);
-const planeMaterial = new THREE.MeshStandardMaterial({
-  side: THREE.DoubleSide,
-});
-
-const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-
-plane.receiveShadow = true;
-
-plane.position.set(0, 0, 0);
-plane.rotation.set(-Math.PI / 2, 0, 0);
-
-scene.add(plane);
 
 /**
  * Renderer
  */
 const renderer = new THREE.WebGLRenderer({
   canvas,
+  antialias: true,
 });
 
 renderer.setSize(parameters.sizes.width, parameters.sizes.height);
@@ -163,7 +203,21 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 renderer.physicallyCorrectLights = true;
 
+renderer.outputEncoding = THREE.sRGBEncoding;
+
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
 renderer.render(scene, camera);
+
+gui.add(renderer, "toneMapping", {
+  No: THREE.ToneMapping,
+  Linear: THREE.LinearToneMapping,
+  Reinhard: THREE.ReinhardToneMapping,
+  Cineon: THREE.CineonToneMapping,
+  ACESFilmic: THREE.ACESFilmicToneMapping,
+});
+
+gui.add(renderer, "toneMappingExposure").min(0).max(10).step(0.001);
 
 /**
  * Animation
